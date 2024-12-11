@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.contrib.auth.models import User
 from django.db import models
 
@@ -111,6 +113,11 @@ class Training(ModelBase):
         db_column='tx_name',
         max_length=70,
         null=False,
+    )
+    date = models.DateField(
+        db_column='date',
+        null=False,
+        default=None
     )
 
     class Meta:

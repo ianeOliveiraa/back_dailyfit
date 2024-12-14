@@ -12,6 +12,9 @@ class LoginSerializer(serializers.ModelSerializer):
         model = User
         fields = ['username', 'first_name', 'last_name']
 
+# Este serializer é responsável por serializar os dados do modelo padrão User (do Django).
+# Ele expõe os campos username, first_name e last_name para leitura.
+
 
 class UserProfileSerializer(serializers.ModelSerializer):
     login = LoginSerializer(many=False)
@@ -20,11 +23,20 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = models.UserProfile
         exclude = ['created_at']
 
+# Serializa os dados do modelo UserProfile (perfil do usuário).
+# Inclui os dados do LoginSerializer como um campo aninhado chamado login.
+# Exclui o campo created_at do modelo.
+# Permite a exibição de informações completas do perfil do usuário, incluindo os dados básicos (nome, sobrenome e username)
+# por meio do campo aninhado login.
+
 
 class MuscleGroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.MuscleGroup
         exclude = ['created_at']
+
+# Serializa os dados do modelo MuscleGroup, excluindo o campo created_at.
+# Usado para expor os dados do grupo muscular em formato JSON, ignorando o campo created_at.
 
 
 class ExerciseSerializer(serializers.ModelSerializer):
@@ -36,6 +48,10 @@ class ExerciseSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'id': {'read_only': False}
         }
+
+# Serializa os dados do modelo Exercise (exercício).
+# Configura o campo id como editável ao sobrescrever extra_kwargs.
+#Permite o uso de um ID customizado durante operações como criação ou atualização.
 
 
 class TrainingSerializer(serializers.ModelSerializer):
@@ -49,6 +65,10 @@ class TrainingSerializer(serializers.ModelSerializer):
             'id': {'read_only': False}
         }
 
+# serializa os dados do modelo Training (treino).
+# Inclui os dados do usuário (LoginSerializer) de forma aninhada.
+# Permite o uso de um ID customizado para operações específicas.
+
 
 class TrainingExerciseSerializer(serializers.ModelSerializer):
     exercise = ExerciseSerializer(many=False, read_only=True)
@@ -58,6 +78,9 @@ class TrainingExerciseSerializer(serializers.ModelSerializer):
         model = models.TrainingExercise
         exclude = ['created_at']
 
+# Serializa os dados do modelo TrainingExercise (relação entre treino e exercício).
+# Inclui os dados do exercício e do treino de forma aninhada.
+
     def create(self, validated_data):
         exercise = models.Exercise.objects.get(id=validated_data.pop('exercise').get("id"))
         training = models.Training.objects.get(id=validated_data.pop('training').get("id"))
@@ -66,6 +89,10 @@ class TrainingExerciseSerializer(serializers.ModelSerializer):
             exercise=exercise, training=training, **validated_data
         )
 
+    # create:
+    # Recebe os IDs de exercise e training no corpo da requisição.
+    # Recupera os objetos correspondentes no banco e cria um TrainingExercise.
+
     def update(self, instance, validated_data):
         instance.exercise = models.Exercise.objects.get(id=validated_data.pop('exercise').get("id"))
         instance.training = models.Training.objects.get(id=validated_data.pop('training').get("id"))
@@ -73,6 +100,9 @@ class TrainingExerciseSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
         return instance
+
+    # update:
+    # Atualiza um TrainingExercise existente com base nos IDs fornecidos.
 
     def to_internal_value(self, data):
         exercise_data = data.get('exercise')
@@ -88,6 +118,10 @@ class TrainingExerciseSerializer(serializers.ModelSerializer):
         internal_data['training'] = training_data
         return internal_data
 
+    # to_internal_value:
+    # Valida se os dados aninhados de exercise e training contêm os IDs necessários.
+    # Converte os dados JSON recebidos para um formato interno utilizado pelo serializer.
+
 
 class MealSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
@@ -99,6 +133,11 @@ class MealSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'id': {'read_only': False}
         }
+
+# Serializa os dados do modelo Meal (refeição).
+# Os campos created_at e user não serão incluídos nem no JSON de saída, nem no JSON de entrada.
+# Isso é útil para ocultar informações que não precisam ser manipuladas diretamente pela API.
+# Calcula as calorias totais de uma refeição com base nos alimentos associados.
 
     def get_total_calories(self, obj):
         meal_foods = MealFood.objects.filter(meal=obj)
@@ -123,6 +162,8 @@ class FoodSerializer(serializers.ModelSerializer):
             'id': {'read_only': False}
         }
 
+#Serializa os dados do modelo Food (alimento).
+
 
 class MealFoodSerializer(serializers.ModelSerializer):
     meal = MealSerializer(many=False, read_only=True)
@@ -131,6 +172,8 @@ class MealFoodSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.MealFood
         exclude = ['created_at']
+
+# Serializa a relação entre Meal e Food.
 
     def create(self, validated_data):
         meal = models.Meal.objects.get(id=validated_data.pop('meal').get("id"))
@@ -162,14 +205,18 @@ class MealFoodSerializer(serializers.ModelSerializer):
         internal_data['food'] = food_data
         return internal_data
 
+# create e update:
+# Recuperam os objetos Meal e Food e criam/atualizam a relação.
+
+# to_internal_value:
+# Valida se os IDs de meal e food foram fornecidos corretamente.
+
 
 class RegisterSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(
-        required=True,
-        validators=[UniqueValidator(queryset=User.objects.all())]
-    )
+    email = serializers.EmailField(required=True, validators=[UniqueValidator(queryset=User.objects.all())])
+    password = serializers.CharField(write_only=True, required=True)
 
-    password = serializers.CharField(write_only=True, required=True)  # , validators=[validate_password])
+# Serializa dados para registrar um novo usuário.
 
     class Meta:
         model = User
@@ -191,3 +238,6 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.save()
 
         return user
+
+# create:
+# Cria um novo usuário no banco de dados, definindo a senha de forma segura com set_password.

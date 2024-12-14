@@ -103,7 +103,6 @@ class TrainingExerciseViewSet(viewsets.ModelViewSet):
 class MealViewSet(viewsets.ModelViewSet):
     queryset = models.Meal.objects.all()
     serializer_class = serializers.MealSerializer
-    filterset_class = filters.MealFilter
     filter_backends = [DjangoFilterBackend]
     permission_classes = [IsAuthenticated]
 
